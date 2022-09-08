@@ -1,0 +1,1063 @@
+---
+title: "Analise tweets"
+output: html_document
+date: '2022-07-19'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+
+library(purrr)
+library(stringr)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(syuzhet)
+library(RColorBrewer)
+library(wordcloud)
+library(tm)
+library(plotly)
+library(fs)
+library(tidytext)
+```
+
+# Extração e construção da base
+
+```{r extract, include=FALSE}
+#cria vetor de nomes
+file_path <- dir_ls("C:/Users/iarac/Documents/MEGA/R/fvecchi/extract")
+
+#cria lista vazia
+list_csv <- list()
+completo <- data.frame()
+
+for(i in seq_along(file_path)){
+  list_csv[[i]] <- read.csv(file = file_path[[i]], 
+                            stringsAsFactors = FALSE, encoding="UTF-8")
+  completo <- rbind(completo, list_csv[[i]])
+}
+
+list_names <- vector()
+for(i in seq_along(file_path)){
+  list_names[i] <- str_extract(string = file_path[[i]], pattern = "([^/]*)$")
+}
+
+list_csv <- set_names(list_csv, list_names)
+
+length(list_csv)
+
+```
+
+# Análise descritiva inicial
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+completo$date <- as.Date(completo$date)
+
+
+
+completo_selec <- completo %>% 
+  select(id, date, time, user_id, username, name, tweet, 
+         mentions, replies_count, retweets_count, likes_count, link, retweet) %>% 
+  distinct(tweet, .keep_all = T)
+
+completo_selec %>% 
+  ggplot2::ggplot(aes(name)) +geom_bar()+
+          theme(axis.text.x = element_text(face="bold", size=14),
+          axis.text.y = element_text(face="bold", size=14),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 14)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 19000)) + coord_flip() +
+  labs(y = "Total tweets 2019 - 2020") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 455,
+    colour = 'black', size = 5)
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+by_date <- completo_selec %>%
+  group_by(date) %>% 
+  count()
+
+m <- by_date %>% arrange(desc(n)) %>% head()
+
+  plot_ly(x = by_date$date, y = by_date$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% 
+  layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1")) %>% add_annotations(x = m$date,
+                  y = m$n,
+                text = m$date,
+                  xref = "x",
+                  yref = "y",
+                  showarrow = TRUE,
+                  arrowhead = 2,
+                  arrowsize = .3,
+                  ax = -40,
+                  ay = -10)
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+mynames = levels(as.factor(completo_selec$name))
+myindex = c(1:21)
+p = list()
+cont = 1
+
+for (i in myindex) {
+  frame <- completo_selec %>% 
+    group_by(name, date) %>% 
+    count() %>% 
+    filter(name == mynames[i]) 
+  p[[cont]] <-
+    plot_ly(x =frame$date, y = frame$n, 
+            type = "scatter", mode = 'lines',  line = list(width = 1)) %>% 
+    layout(title = mynames[[cont]],
+           xaxis = list(title = 'Data',
+                        zeroline = TRUE),
+           yaxis = list(title = "Tweets"))
+  cont = cont + 1
+}
+
+
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[1]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[2]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[3]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[4]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[5]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[6]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[7]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[8]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[9]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[10]]
+```
+
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[11]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[12]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[13]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[14]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[15]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[16]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[17]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[18]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[19]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[20]]
+```
+
+```{r echo=FALSE, fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p[[21]]
+```
+
+#  Limpeza dos tweets
+
+```{r include=FALSE}
+completo_selec$tweet2 <- gsub("https\\S*", "", completo_selec$tweet) 
+completo_selec$tweet2 <- gsub("@\\S*", "", completo_selec$tweet2) 
+completo_selec$tweet2 <- gsub("amp", "", completo_selec$tweet2) 
+completo_selec$tweet2 <- gsub("[\r\n]", "", completo_selec$tweet2)
+completo_selec$tweet2 <- gsub("[[:punct:]]", "", completo_selec$tweet2)
+completo_selec$tweet2 <- gsub("(RT|via)((?:\\b\\W*@\\w+)+)", " ",  completo_selec$tweet2)
+completo_selec$tweet2 <- str_replace(completo_selec$tweet2,"RT @[a-z,A-Z]*: ","")
+completo_selec$tweet2 <- gsub("@\\w+", "", completo_selec$tweet2)
+completo_selec$tweet2 <- str_replace_all(completo_selec$tweet2,"@[a-z,A-Z]*","")  
+completo_selec$tweet2 <- gsub("[^[:alnum:][:blank:]]", " ", completo_selec$tweet2)
+completo_selec$tweet2 <- gsub("[[:digit:]]", " ", completo_selec$tweet2)
+completo_selec$tweet2 <- tolower(completo_selec$tweet2)
+
+
+
+```
+
+# Lista de termos
+
+```{r include=FALSE}
+
+arma <- completo_selec %>% 
+   filter(
+    str_detect(tweet2, "\\S+\\s+arma") & !str_detect(tweet2, "\\S+\\s+armadas") & !str_detect(tweet2, "\\S+\\s+armaz")
+    & !str_detect(tweet2, "\\S+\\s+armaç") & !str_detect(tweet2, "\\S+\\s+biologica")
+    )%>% 
+  mutate(Key = "Arma")
+
+bala <- completo_selec %>% 
+   filter(
+    str_detect(tweet2, "\\S+\\s+bala") & !str_detect(tweet2, "\\S+\\s+balai") & 
+      !str_detect(tweet2, "\\S+\\s+balan")& !str_detect(tweet2, "\\S+\\s+balab")
+  )%>% 
+  mutate(Key = "Bala")
+
+cidadao_bem <- completo_selec %>% 
+  filter(
+    str_detect(tweet2, "\\S+\\s+cidad.*") & str_detect(tweet2, "\\S+\\s+bem")
+  )%>% 
+  mutate(Key = "Cidadão de bem")
+
+comunismo <- completo_selec %>% 
+   filter(
+    str_detect(tweet2, "\\S+\\s+comunis") 
+  )%>% 
+  mutate(Key = "Comunismo")
+
+crime <- completo_selec %>% 
+  filter(
+    str_detect(tweet2, "\\S+\\s+crim") 
+  )%>% 
+  mutate(Key = "Crime")
+
+defesa <- completo_selec %>% 
+  filter(
+    str_detect(tweet2, "\\S+\\s+defes") 
+  )%>% 
+  mutate(Key = "Defesa")
+
+esquerda<- completo_selec %>% 
+  filter(
+    str_detect(tweet2, "\\S+\\s+esquerd") 
+  )%>% 
+  mutate(Key = "Esquerda")
+
+estados_unidos <- completo_selec %>% 
+  filter(
+    (str_detect(tweet2, "\\S+\\s+estad") & str_detect(tweet2, "\\S+\\s+unidos")) 
+    | str_detect(tweet2, "\\S+\\s+eua")
+  ) %>% 
+  mutate(Key = "EUA")
+
+familia <- completo_selec %>% 
+  filter(
+    str_detect(tweet2, "\\S+\\s+famil") |     str_detect(tweet2, "\\S+\\s+famíl")
+  )%>% 
+  mutate(Key = "Família")
+
+feminismo <- completo_selec %>% 
+  filter(
+    (str_detect(tweet2, "\\S+\\s+femin")) 
+  )%>% 
+  mutate(Key = "Feminismo")
+
+ideologia <- completo_selec %>% 
+  filter(
+    (str_detect(tweet2, "\\S+\\s+ideol"))  ) %>% 
+  mutate(Key = "Ideologia")
+
+impunidade <- completo_selec %>% 
+  filter(
+    (str_detect(tweet2, "\\S+\\s+impun")))%>% 
+  mutate(Key = "Impunidade")
+
+leg_def <-  completo_selec %>% 
+  filter(
+    (str_detect(tweet2, "\\S+\\s+leg") & str_detect(tweet2, "defesa")))%>% 
+  mutate(Key = "Legítima Defesa")
+  
+liberdade <- completo_selec %>% 
+  filter(
+    (str_detect(tweet2, "\\S+\\s+liberda") ))%>% 
+  mutate(Key = "Liberdade")
+
+municao <- completo_selec %>% 
+   filter(
+    str_detect(tweet2, "\\S+\\s+munição") |  str_detect(tweet2, "\\S+\\s+munições"))%>% 
+  mutate(Key = "Munição")
+
+seguranca <- completo_selec %>% 
+  filter(
+    (str_detect(tweet2, "\\S+\\s+seguran") ))%>% 
+  mutate(Key = "Segurança")
+
+terrorismo <- completo_selec %>% 
+  filter(
+    (str_detect(tweet2, "\\S+\\s+terror") )) %>% 
+  mutate(Key = "Terrorismo")
+```
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+library(RColorBrewer)
+library(paletteer)
+paletteer_d("nord::frost")
+nb.cols <- 21
+mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(nb.cols)
+
+colors <- c("#C62828FF", "#607D8BFF", "#F44336FF", "#9E9E9EFF", "#9C27B0FF", "#673AB7FF", "#3F51B5FF", "#2196F3FF", "#795548FF", "#29B6F6FF", "#006064FF", "#FF9800FF", "#009688FF", "#FFEB3BFF", "#4CAF50FF", "#8BC34AFF", "#471401FF", "#1A4659FF", "#CA480DFF", "#3C999CFF", "#C86C18FF")
+            
+junto <- rbind(arma, bala, cidadao_bem, comunismo, crime, defesa, esquerda, estados_unidos, familia, feminismo, ideologia, 
+               impunidade, leg_def, liberdade, municao, seguranca, terrorismo )
+junto %>% 
+  group_by(Key, name) %>%   
+  count() %>% 
+  ggplot2::ggplot(aes(x = Key, y = n,  fill = name))  + geom_bar(position="fill", stat="identity")  + coord_flip() + guides(fill=guide_legend(ncol =1)) + scale_fill_manual(values = colors) +
+          theme(axis.text.x = element_text(face="bold", size=14),
+          axis.text.y = element_text(face="bold", size=14),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 14)) +
+ scale_y_continuous(expand=c(0,0)) + coord_flip() +
+  labs(y = "% tweets") 
+
+
+```
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+junto %>% 
+  group_by(Key, name) %>%   
+  count() %>% 
+  ggplot2::ggplot(aes(x = name, y = n,  fill = Key))  + geom_bar(position="fill", stat="identity")  + coord_flip() + guides(fill=guide_legend(ncol =1)) + scale_fill_manual(values = colors) +
+          theme(axis.text.x = element_text(face="bold", size=14),
+          axis.text.y = element_text(face="bold", size=14),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 14)) +
+ scale_y_continuous(expand=c(0,0)) + coord_flip() +
+  labs(y = "% tweets") 
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+by_date_termos <- junto %>%
+  group_by(date) %>% 
+  count()
+
+m_termos <- by_date_termos %>% arrange(desc(n)) %>% head()
+
+  plot_ly(x = by_date_termos$date, y = by_date_termos$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% 
+  layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1")) %>% add_annotations(x = m_termos$date,
+                  y = m_termos$n,
+                text = m_termos$date,
+                  xref = "x",
+                  yref = "y",
+                  showarrow = TRUE,
+                  arrowhead = 2,
+                  arrowsize = .3,
+                  ax = -40,
+                  ay = -10)
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+mynames_termos = levels(as.factor(junto$name))
+myindex = c(1:21)
+p_termos = list()
+cont = 1
+
+for (i in myindex) {
+  frame_termos <- junto %>% 
+    group_by(name, date) %>% 
+    count() %>% 
+    filter(name == mynames_termos[i]) 
+  p_termos[[cont]] <-
+    plot_ly(x =frame_termos$date, y = frame_termos$n, 
+            type = "scatter", mode = 'lines',  line = list(width = 1)) %>% 
+    layout(title = mynames[[cont]],
+           xaxis = list(title = 'Data',
+                        zeroline = TRUE),
+           yaxis = list(title = "Tweets"))
+  cont = cont + 1
+}
+
+
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[1]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[2]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[3]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[4]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[5]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[6]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[7]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[8]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[9]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[10]]
+```
+
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[11]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[12]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[13]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[14]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[15]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[16]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[17]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[18]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[19]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[20]]
+```
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+p_termos[[21]]
+```
+
+## Arma
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+
+arma2 <- arma %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = arma2$date, y = arma2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavra arma e derivadas (2019 - 2020)")
+```
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ arma %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 300)) + coord_flip() +
+  labs(y = "Tweets com palavra arma e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 10,
+    colour = 'black', size = 3)
+```
+
+## Bala
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+
+bala2 <- bala %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = bala2$date, y = bala2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavra bala e derivadas (2019 - 2020)")
+```
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ bala %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 50)) + coord_flip() +
+  labs(y = "Tweets com palavra bala e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 3,
+    colour = 'black', size = 3)
+```
+
+## Cidadão de Bem
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+cidadao_bem2 <- cidadao_bem %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = cidadao_bem2$date, y = cidadao_bem2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavra cidadão de bem (2019 - 2020)")
+```
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ cidadao_bem %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 50)) + coord_flip() +
+  labs(y = "Tweets com palavra cidadão de bem (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+## Comunismo
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+comunismo2 <- comunismo %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = comunismo2$date, y = comunismo2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavra comunismo e derivadas (2019 - 2020)")
+```  
+  
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ comunismo %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 50)) + coord_flip() +
+  labs(y = "Tweets com palavra comunismo e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+## Crime
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+crime2 <- crime %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = comunismo2$date, y = comunismo2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavra crime e derivadas (2019 - 2020)")
+```  
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ crime %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 350)) + coord_flip() +
+  labs(y = "Tweets com palavra crime e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 10,
+    colour = 'black', size = 3)
+```
+
+## Defesa
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+defesa2 <- defesa %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = defesa2$date, y = defesa2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavra defesa e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ defesa %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 150)) + coord_flip() +
+  labs(y = "Tweets com palavra defesa e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 10,
+    colour = 'black', size = 3)
+```
+
+## Esquerda
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+esquerda2 <- esquerda %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = esquerda2$date, y = esquerda2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavra esquerda e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ esquerda %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 150)) + coord_flip() +
+  labs(y = "Tweets com palavra esquerda e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 10,
+    colour = 'black', size = 3)
+```
+
+## Estados Unidos
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+estados_unidos2 <- estados_unidos %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = estados_unidos2$date, y = estados_unidos2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras Estados Unidos e EUA (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ estados_unidos %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 50)) + coord_flip() +
+  labs(y = "Tweets com palavras Estados Unidos e EUA (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 3,
+    colour = 'black', size = 3)
+```
+
+## Família
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+familia2 <- familia %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = familia2$date, y = familia2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras família e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ familia %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 50)) + coord_flip() +
+  labs(y = "Tweets com palavras família e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 3,
+    colour = 'black', size = 3)
+```
+
+## Feminismo
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+feminismo2 <- feminismo %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = feminismo2$date, y = feminismo2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras feminismo e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ feminismo %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 30)) + coord_flip() +
+  labs(y = "Tweets com palavras feminismo e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 3,
+    colour = 'black', size = 3)
+```
+
+
+## Ideologia
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+ideologia2 <- ideologia %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = ideologia2$date, y = ideologia2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras ideologia e derivadas (2019 - 2020)")
+``` 
+
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ ideologia %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 30)) + coord_flip() +
+  labs(y = "Tweets com palavras ideologia e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+## Impunidade
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+impunidade2 <- impunidade %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = impunidade2$date, y = impunidade2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras impunidade e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ impunidade %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 30)) + coord_flip() +
+  labs(y = "Tweets com palavras impunidade e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+## Legítima Defesa
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+leg_def2 <- leg_def %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = leg_def2$date, y = leg_def2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras legítima defesa (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ leg_def %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 30)) + coord_flip() +
+  labs(y = "Tweets com palavras legítima defesa (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+## Liberdade
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+liberdade2 <- liberdade %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = liberdade2$date, y = liberdade2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras liberdade e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ liberdade %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 40)) + coord_flip() +
+  labs(y = "Tweets com palavras liberdade e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+## Munição 
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+municao2 <- municao %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = municao2$date, y = municao2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras munição e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ municao %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 25)) + coord_flip() +
+  labs(y = "Tweets com palavras munição e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+## Segurança
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+seguranca2 <- seguranca %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = seguranca2$date, y = seguranca2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras segurança e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ seguranca %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 30)) + coord_flip() +
+  labs(y = "Tweets com palavras segurança e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+
+## Terrorismo
+
+```{r fig.height=10, fig.width=12, message=FALSE, warning=FALSE}
+
+terrorismo2 <- terrorismo %>% 
+  group_by(date) %>%
+  count() 
+  
+plot_ly(x = terrorismo2$date, y = terrorismo2$n, mode = 'lines') %>%
+  add_lines(hoverinfo = "none",
+        line = list(size = 3)) %>% 
+layout(showlegend = F, xaxis = list(range = c('2019-01-01','2020-12-31'))) %>% layout(xaxis = list(title = 'Data',color = '#364E6F', dtick = "M1"),
+      yaxis = list(title = "Tweets"),
+      title = "Tweets com palavras terrorismo e derivadas (2019 - 2020)")
+``` 
+
+```{r fig.height=12, fig.width=15, message=FALSE, warning=FALSE}
+ terrorismo %>% 
+  ggplot2::ggplot(aes(name)) + geom_bar()  +
+          theme(axis.text.x = element_text(face="bold", size=10),
+          axis.text.y = element_text(face="bold", size=10),
+          axis.title.y = element_blank(), axis.title.x = element_text(face = "bold", size = 10)) +
+ scale_y_continuous(expand=c(0,0), limits = c(0, 50)) + coord_flip() +
+  labs(y = "Tweets com palavras terrorismo e derivadas (2019 - 2020)") + geom_text(
+    aes(label = sprintf('%d',..count..)),
+    stat = 'count', nudge_y = 1,
+    colour = 'black', size = 3)
+```
+
+# Análise de palavras
+
+```{r rascunho}
+stop <- data.frame(tm::stopwords("pt"))
+colnames(stop) <- "word"
+
+tidy_tweets <- junto %>% 
+  unnest_tokens(word, tweet2) %>% 
+  filter(!word %in% stop$word,
+         !word %in% str_remove_all(stop$word, "'"),
+         str_detect(word, "[a-z]"))
+
+freq_name_word <- tidy_tweets %>% 
+  count(name, word, sort = TRUE) %>% 
+  left_join(tidy_tweets %>% 
+              count(name, name = "total")) %>%
+  mutate(freq = n/total) 
+
+freq_word <- tidy_tweets %>% 
+  count(word, sort = TRUE) %>% 
+  arrange(desc(n)) %>% 
+  head(20)
+library("lubridate")
+
+words_by_time <- tidy_tweets %>%
+  filter(!str_detect(word, "^@")) %>%
+  mutate(time_floor = floor_date(date, unit = "1 month")) %>%
+  count(time_floor, name, word) %>%
+  group_by(name, time_floor) %>%
+  mutate(time_total = sum(n)) %>%
+  group_by(name, word) %>%
+  mutate(word_total = sum(n)) %>%
+  ungroup() %>%
+  rename(count = n) %>%
+  filter(word_total > 30)
+
+nested_data <- words_by_time %>%
+  nest(data = c(-word, -name)) 
+
+library(purrr)
+
+nested_models <- nested_data %>%
+  mutate(models = map(data, ~ glm(cbind(count, time_total) ~ time_floor, ., 
+                                  family = "binomial")))  
+
+library(broom)
+
+slopes <- nested_models %>%
+  mutate(models = map(models, tidy)) %>%
+  unnest(cols = c(models)) %>%
+  filter(term == "time_floor") %>%
+  mutate(adjusted.p.value = p.adjust(p.value))
+  
+top_slopes <- slopes %>% 
+  filter(adjusted.p.value < 0.05)
+  
+words_by_time %>%
+  inner_join(top_slopes, by = c("word", "name")) %>%
+  ggplot(aes(time_floor, count/time_total, color = word)) +
+  geom_line(size = 1.3) +
+  labs(x = NULL, y = "Word frequency")
+
+```
+
+
+  
+  
